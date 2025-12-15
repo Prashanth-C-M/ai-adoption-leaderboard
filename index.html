@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Adoption Leaderboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="background-effects">
+        <div class="grid-overlay"></div>
+        <div class="glow-orb glow-1"></div>
+        <div class="glow-orb glow-2"></div>
+        <div class="glow-orb glow-3"></div>
+    </div>
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <i class="fa-solid fa-rocket launch-icon"></i>
+                <h1>AI Adoption Champions</h1>
+            </div>
+            <p class="subtitle">Tracking the pioneers of AI integration</p>
+            <div class="header-actions">
+                <button id="add-team-btn" class="btn primary"><i class="fa-solid fa-plus"></i> Add Team</button>
+                <button id="view-report-btn" class="btn secondary"><i class="fa-solid fa-chart-line"></i> Insights Report</button>
+                <button id="view-rules-btn" class="btn secondary"><i class="fa-solid fa-info-circle"></i> Pointing System</button>
+            </div>
+        </header>
+
+        <div id="podium-display" class="podium-display">
+            <!-- Podium will be injected here -->
+        </div>
+
+        <div class="leaderboard-container">
+            <div class="leaderboard-header">
+                <div class="col rank">Rank</div>
+                <div class="col team">Team</div>
+                <div class="col score">Score</div>
+                <div class="col badges">Badges</div>
+                <div class="col actions">Actions</div>
+            </div>
+            <div id="leaderboard-list">
+                <!-- List items will be injected here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Details Modal (Dashboard) -->
+    <div id="view-modal" class="modal">
+        <div class="modal-content dashboard-modal">
+            <span class="close-view">&times;</span>
+            
+            <div class="dashboard-header">
+                <div class="dashboard-icon" id="view-icon">
+                    <i class="fa-solid fa-rocket"></i>
+                </div>
+                <div class="dashboard-info">
+                    <h2 id="view-name">Team Name</h2>
+                    <div class="dashboard-rank">Rank #<span id="view-rank">1</span></div>
+                </div>
+            </div>
+
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Score</div>
+                    <div class="stat-value" id="view-score">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Current Level</div>
+                    <div class="stat-value level-text" id="view-level">Novice</div>
+                </div>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-info">
+                    <span>Progress to Next Level</span>
+                    <span id="view-progress-text">0 / 1000</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="view-progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-badges">
+                <h3>Earned Badges</h3>
+                <div class="badges-grid" id="view-badges">
+                    <!-- Badges injected here -->
+                </div>
+            </div>
+
+            <div class="dashboard-history">
+                <h3>History</h3>
+                <div class="history-list" id="view-history">
+                    <!-- History injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Team Modal -->
+    <div id="team-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">Add New Team</h2>
+            <form id="team-form">
+                <input type="hidden" id="edit-index" value="-1">
+                
+                <div class="form-group">
+                    <label for="team-name">Team Name</label>
+                    <input type="text" id="team-name" required placeholder="e.g. Neural Nexus">
+                </div>
+                
+                <div class="form-group">
+                    <label>Current Score</label>
+                    <div id="current-score-display" style="padding: 0.8rem; background: rgba(255,255,255,0.1); border-radius: 8px; color: var(--accent); font-weight: bold;">0</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="points-add">Add Points</label>
+                    <input type="number" id="points-add" placeholder="e.g. 100 or -50">
+                </div>
+
+                <div class="form-group">
+                    <label for="points-reason">Reason</label>
+                    <input type="text" id="points-reason" placeholder="e.g. Completed AI Training">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Icon</label>
+                    <div class="icon-selection">
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-brain" checked><i class="fa-solid fa-brain"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-database"><i class="fa-solid fa-database"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-robot"><i class="fa-solid fa-robot"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-code-branch"><i class="fa-solid fa-code-branch"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-microchip"><i class="fa-solid fa-microchip"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-rocket"><i class="fa-solid fa-rocket"></i></label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn primary full-width">Save Team</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Analytics Report Modal -->
+    <div id="report-modal" class="modal">
+        <div class="modal-content report-modal-content">
+            <span class="close-report">&times;</span>
+            <h2>📊 AI Adoption Insights</h2>
+            
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Engagement Levels</h3>
+                    <canvas id="levelChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Activity Trends (Last 7 Days)</h3>
+                    <canvas id="activityChart"></canvas>
+                </div>
+                <div class="chart-card full-width-chart">
+                    <h3>Top Performing Teams</h3>
+                    <canvas id="topChart"></canvas>
+                </div>
+                <div class="chart-card full-width-chart">
+                    <h3>Activity Count (Last 7 Days)</h3>
+                    <canvas id="activityCountChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pointing System Modal -->
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-rules">&times;</span>
+            <h2>🏆 Pointing System</h2>
+            <div class="rules-list">
+                <div class="rule-item">
+                    <div class="rule-points">+1,000 pts</div>
+                    <div class="rule-desc">Launching an AI Project to Production</div>
+                </div>
+                <div class="rule-item">
+                    <div class="rule-points">+500 pts</div>
+                    <div class="rule-desc">Completing AI Training Course (per member)</div>
+                </div>
+                <div class="rule-item">
+                    <div class="rule-points">+200 pts</div>
+                    <div class="rule-desc">Shared a reusable AI component</div>
+                </div>
+                <div class="rule-item">
+                    <div class="rule-points">+100 pts</div>
+                    <div class="rule-desc">Weekly AI Tool Usage Streak</div>
+                </div>
+                <div class="rule-item">
+                    <div class="rule-points">Badges</div>
+                    <div class="rule-desc">
+                        <p>🤝 <strong>Collaborator</strong>: Awarded at Level 2 (Explorer)</p>
+                        <p>🏗️ <strong>Builder</strong>: Awarded at Level 3 (Pro)</p>
+                        <p>⚙️ <strong>Optimizer</strong>: Awarded at Level 4 (Master)</p>
+                        <p>🛡️ <strong>Guardian</strong>: Awarded at Level 4 (Master)</p>
+                        <p>💡 <strong>Innovator</strong>: Awarded at Level 5 (Visionary)</p>
+                        <p>🤖 <strong>AI Native</strong>: Awarded at Level 5 (Visionary)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
