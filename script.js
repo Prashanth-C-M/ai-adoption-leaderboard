@@ -1,96 +1,21 @@
-// Initial Data
-let teams = [
-    {
-        name: "Neural Nexus",
-        icon: "fa-brain",
-        score: 9850,
-        history: [
-            { points: 500, reason: "Launch MVP", date: "2023-10-01" },
-            { points: 200, reason: "Weekly Streak", date: "2023-10-08" }
-        ],
-        badges: [
-            { icon: "💡", title: "Innovator" },
-            { icon: "🤖", title: "AI Native" },
-            { icon: "⚙️", title: "Optimizer" }
-        ]
-    },
-    {
-        name: "Data Dynamos",
-        icon: "fa-database",
-        score: 9420,
-        history: [],
-        badges: [
-            { icon: "🏗️", title: "Builder" },
-            { icon: "💡", title: "Innovator" }
-        ]
-    },
-    {
-        name: "Cyber Synapse",
-        icon: "fa-network-wired",
-        score: 8900,
-        badges: [
-            { icon: "🛡️", title: "Guardian" },
-            { icon: "⚙️", title: "Optimizer" }
-        ]
-    },
-    {
-        name: "Algorithm Allies",
-        icon: "fa-code-branch",
-        score: 8550,
-        badges: [
-            { icon: "🤝", title: "Collaborator" }
-        ]
-    },
-    {
-        name: "Silicon Squad",
-        icon: "fa-microchip",
-        score: 8100,
-        badges: [
-            { icon: "🏗️", title: "Builder" },
-            { icon: "⚙️", title: "Optimizer" }
-        ]
-    },
-    {
-        name: "Quantum Quest",
-        icon: "fa-atom",
-        score: 7800,
-        badges: [
-            { icon: "💡", title: "Innovator" }
-        ]
-    },
-    {
-        name: "Logic Legends",
-        icon: "fa-puzzle-piece",
-        score: 7450,
-        badges: [
-            { icon: "⚙️", title: "Optimizer" }
-        ]
-    },
-    {
-        name: "Binary Brigade",
-        icon: "fa-0",
-        score: 7100,
-        badges: [
-            { icon: "🏗️", title: "Builder" }
-        ]
-    },
-    {
-        name: "Future Forge",
-        icon: "fa-hammer",
-        score: 6800,
-        badges: [
-            { icon: "🏗️", title: "Builder" }
-        ]
-    },
-    {
-        name: "Techno Titans",
-        icon: "fa-robot",
-        score: 6500,
-        badges: [
-            { icon: "🤖", title: "AI Native" }
-        ]
+// Initial Data (Empty - fetched from API)
+let teams = [];
+
+// API Interaction
+async function fetchTeams() {
+    try {
+        const response = await fetch('/api/teams');
+        if (!response.ok) throw new Error('Failed to fetch');
+        teams = await response.json();
+        // Calculate badges locally for display
+        teams.forEach(team => {
+            team.badges = calculateBadges(team.score);
+        });
+        renderLeaderboard();
+    } catch (error) {
+        console.error("Error fetching teams:", error);
     }
-];
+}
 
 const availableBadges = [
     { icon: "💡", title: "Innovator" },
@@ -256,7 +181,7 @@ function closeRules() {
     rulesModal.style.display = 'none';
 }
 
-// Mock Data Generator for Reports
+// Mock Data Generator for Reports (Still useful for chart visualization if history is empty)
 function generateMockHistory() {
     teams.forEach(team => {
         if (!team.history || team.history.length === 0) {
@@ -378,7 +303,6 @@ function renderReports() {
     });
 
     // 4. Activity Count (Stacked Bar Chart - Last 7 Days)
-    // Generate colors for teams
     const colors = [
         '#3b82f6', '#8b5cf6', '#10b981', '#fbbf24', '#f43f5e', 
         '#06b6d4', '#ec4899', '#f97316', '#6366f1', '#84cc16'
@@ -427,7 +351,7 @@ function renderReports() {
             },
             plugins: { 
                 legend: { 
-                    display: true, // Show legend so users know which color is which team
+                    display: true, 
                     position: 'bottom',
                     labels: { color: '#fff', boxWidth: 10, font: { size: 10 } }
                 } 
@@ -454,7 +378,7 @@ window.addEventListener('click', (e) => {
 });
 
 // Form Submission (Add / Edit)
-teamForm.addEventListener('submit', (e) => {
+teamForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const name = document.getElementById('team-name').value;
@@ -467,57 +391,60 @@ teamForm.addEventListener('submit', (e) => {
     let pointsToAdd = parseInt(pointsAddInput.value);
     const reason = reasonInput.value.trim();
 
-    // Logic for Update (Edit)
-    if (index > -1) {
-        const team = teams[index];
-        let newScore = team.score;
-        let newHistory = team.history || [];
+    try {
+        if (index > -1) {
+            // Update Existing Team
+            const team = teams[index];
+            let newScore = team.score;
+            let newHistory = team.history || [];
 
-        // If points added, require reason
-        if (!isNaN(pointsToAdd) && pointsToAdd !== 0) {
-            if (!reason) {
-                alert("Please provide a reason for adding/subtracting points.");
-                return;
+            if (!isNaN(pointsToAdd) && pointsToAdd !== 0) {
+                if (!reason) {
+                    alert("Please provide a reason for adding/subtracting points.");
+                    return;
+                }
+                newScore += pointsToAdd;
+                const date = new Date().toISOString().split('T')[0];
+                newHistory.push({ points: pointsToAdd, reason: reason, date: date });
             }
-            newScore += pointsToAdd;
-            const date = new Date().toISOString().split('T')[0];
-            newHistory.push({ points: pointsToAdd, reason: reason, date: date });
-        }
 
-        teams[index] = { 
-            ...team, 
-            name, 
-            icon, 
-            score: newScore,
-            history: newHistory,
-            badges: calculateBadges(newScore) // Immediate update
-        };
-    } else {
-        // Add new team
-        // For new team, use 'points-add' as initial score if provided, else 0
-        // Or simpler: Just treat it as initial score.
-        // The UI changed "Score" to "Current Score" (display) and "Add Points" (input).
-        // For a NEW team, "Current Score" is 0. "Add Points" is the initial score.
-        // Reason is "Initial Score"
+            const updatedTeam = { ...team, name, icon, score: newScore, history: newHistory };
+            
+            await fetch(`/api/teams/${team.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedTeam)
+            });
+
+        } else {
+            // Add New Team
+            let initialScore = isNaN(pointsToAdd) ? 0 : pointsToAdd;
+            let history = [];
+            if (initialScore !== 0) {
+                 history.push({ points: initialScore, reason: reason || "Initial Score", date: new Date().toISOString().split('T')[0] });
+            }
+
+            const newTeamData = {
+                name,
+                icon,
+                score: initialScore,
+                history: history
+            };
+
+            await fetch('/api/teams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTeamData)
+            });
+        }
         
-        let initialScore = isNaN(pointsToAdd) ? 0 : pointsToAdd;
-        let history = [];
-        if (initialScore !== 0) {
-             history.push({ points: initialScore, reason: reason || "Initial Score", date: new Date().toISOString().split('T')[0] });
-        }
+        await fetchTeams(); // Refresh data from server
+        closeModal();
 
-        const newTeamData = {
-            name,
-            icon,
-            score: initialScore,
-            history: history,
-            badges: calculateBadges(initialScore)
-        };
-        teams.push(newTeamData);
+    } catch (error) {
+        console.error("Error saving team:", error);
+        alert("Failed to save changes. Check server connection.");
     }
-
-    renderLeaderboard();
-    closeModal();
 });
 
 // CRUD Operations exposed to window for inline onclicks
@@ -604,10 +531,15 @@ window.viewTeam = function(index) {
     viewModal.style.display = 'flex';
 };
 
-window.deleteTeam = function(index) {
-    if(confirm(`Are you sure you want to delete ${teams[index].name}?`)) {
-        teams.splice(index, 1);
-        renderLeaderboard();
+window.deleteTeam = async function(index) {
+    const team = teams[index];
+    if(confirm(`Are you sure you want to delete ${team.name}?`)) {
+        try {
+            await fetch(`/api/teams/${team.id}`, { method: 'DELETE' });
+            await fetchTeams();
+        } catch (error) {
+            console.error("Error deleting team:", error);
+        }
     }
 };
 
@@ -662,7 +594,7 @@ function createExplosion(x, y, color) {
 
 // Initial Render
 document.addEventListener('DOMContentLoaded', () => {
-    renderLeaderboard();
+    fetchTeams();
     
     // Celebration
     launchFireworks();
