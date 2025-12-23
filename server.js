@@ -64,6 +64,39 @@ function initDb() {
             });
         }
     });
+
+    // Create Reasons Mapping Table
+    db.run(`CREATE TABLE IF NOT EXISTS reason_mappings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reason TEXT,
+        description TEXT,
+        points INTEGER
+    )`, (err) => {
+        if (err) {
+            console.error("Error creating reason_mappings table:", err);
+        } else {
+            // Populate if empty
+            db.get("SELECT count(*) as count FROM reason_mappings", (err, row) => {
+                if (row.count === 0) {
+                    console.log("Seeding reason mappings...");
+                    const initialReasons = [
+                        { reason: "Launch AI MVP", description: "Successfully deploying an AI Minimum Viable Product to production.", points: 1000 },
+                        { reason: "Complete AI Course", description: "Completing a certified AI training course or workshop.", points: 500 },
+                        { reason: "Share Reusable Component", description: "Creating and sharing a reusable AI code component or library.", points: 200 },
+                        { reason: "Weekly Streak", description: "Maintaining a weekly streak of using AI tools.", points: 100 },
+                        { reason: "AI Bug Fix", description: "Identifying and fixing a bug in an AI system.", points: 50 },
+                        { reason: "Mentorship", description: "Mentoring a colleague on AI concepts.", points: 300 }
+                    ];
+                    
+                    const stmt = db.prepare("INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)");
+                    initialReasons.forEach(r => {
+                        stmt.run(r.reason, r.description, r.points);
+                    });
+                    stmt.finalize();
+                }
+            });
+        }
+    });
 }
 
 // API Routes - Auth
@@ -100,6 +133,17 @@ app.post('/api/auth/check', (req, res) => {
     db.get("SELECT id FROM users WHERE email = ?", [email], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ exists: !!row });
+    });
+});
+
+// API Routes - Reasons
+app.get('/api/reasons', (req, res) => {
+    db.all("SELECT * FROM reason_mappings", [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
     });
 });
 

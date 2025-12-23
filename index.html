@@ -191,13 +191,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="points-add">Add Points</label>
-                    <input type="number" id="points-add" placeholder="e.g. 100 or -50">
+                    <label for="points-reason">Reason</label>
+                    <select id="points-reason" required>
+                        <option value="" disabled selected>Select a reason...</option>
+                        <!-- Options populated via JS -->
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="points-reason">Reason</label>
-                    <input type="text" id="points-reason" placeholder="e.g. Completed AI Training">
+                    <label for="points-add">Add Points</label>
+                    <input type="number" id="points-add" readonly placeholder="Points will auto-populate">
                 </div>
 
                 <div class="form-group">

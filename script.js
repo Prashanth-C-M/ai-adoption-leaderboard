@@ -170,6 +170,8 @@ if(formForgot) {
 // Initial Data (Empty - fetched from API)
 let teams = [];
 
+let reasonMappings = [];
+
 // API Interaction
 async function fetchTeams() {
     try {
@@ -180,6 +182,46 @@ async function fetchTeams() {
     } catch (error) {
         console.error("Error fetching teams:", error);
     }
+}
+
+async function fetchReasons() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/reasons`);
+        if (!response.ok) throw new Error('Failed to fetch reasons');
+        reasonMappings = await response.json();
+        populateReasonDropdown();
+    } catch (error) {
+        console.error("Error fetching reasons:", error);
+    }
+}
+
+function populateReasonDropdown() {
+    const reasonSelect = document.getElementById('points-reason');
+    if (!reasonSelect) return;
+
+    // Clear existing options except the placeholder
+    while (reasonSelect.options.length > 1) {
+        reasonSelect.remove(1);
+    }
+
+    reasonMappings.forEach(mapping => {
+        const option = document.createElement('option');
+        option.value = mapping.reason; // Use reason string as value for compatibility
+        option.textContent = mapping.reason;
+        option.title = mapping.description; // Show description on hover
+        option.dataset.points = mapping.points; // Store points in data attribute
+        reasonSelect.appendChild(option);
+    });
+
+    // Add event listener for change
+    reasonSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const points = selectedOption.dataset.points;
+        const pointsInput = document.getElementById('points-add');
+        if (pointsInput && points) {
+            pointsInput.value = points;
+        }
+    });
 }
 
 // DOM Elements
@@ -304,7 +346,19 @@ function renderLeaderboard() {
 }
 
 // Event Listeners
-addTeamBtn.addEventListener('click', () => openModal(false));
+addTeamBtn.addEventListener('click', () => {
+    // Reset Form for Add
+    document.getElementById('team-form').reset();
+    document.getElementById('edit-index').value = -1;
+    document.getElementById('modal-title').textContent = "Add New Team";
+    document.getElementById('current-score-display').textContent = "0";
+    
+    // Default Icon
+    const defaultIcon = document.querySelector('input[name="team-icon"][value="fa-brain"]');
+    if(defaultIcon) defaultIcon.checked = true;
+
+    openModal(false);
+});
 viewReportBtn.addEventListener('click', renderReports);
 
 function renderReports() {
@@ -804,6 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (sessionStorage.getItem('currentUser')) {
         fetchTeams();
+        fetchReasons();
         // Celebration
         launchFireworks();
         launchComets();
