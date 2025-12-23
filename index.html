@@ -3,30 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Adoption Leaderboard</title>
+    <title>Cap-tivate Leaderboard</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Auth Overlay -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-container">
+            <div class="auth-box" id="auth-login">
+                <h2>Login to <span class="brand-title">Cap-tivate</span></h2>
+                <form id="form-login">
+                    <div class="form-group">
+                        <label>Email ID</label>
+                        <input type="text" id="login-email" placeholder="name@brillio.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn primary full-width">Login</button>
+                    <div class="auth-links">
+                        <a href="#" onclick="showAuth('register')">Register</a> | 
+                        <a href="#" onclick="showAuth('forgot')">Forgot Password?</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="auth-box hidden" id="auth-register">
+                <h2>Register</h2>
+                <form id="form-register">
+                    <div class="form-group">
+                        <label>Email ID (Brillio Only)</label>
+                        <input type="text" id="reg-email" placeholder="name@brillio.com" required>
+                        <div id="reg-email-error" class="error-msg hidden"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="reg-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" id="reg-confirm" required>
+                    </div>
+                    <button type="submit" class="btn primary full-width">Sign Up</button>
+                    <div class="auth-links">
+                        <a href="#" onclick="showAuth('login')">Back to Login</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="auth-box hidden" id="auth-forgot">
+                <h2>Reset Password</h2>
+                <form id="form-forgot">
+                    <div class="form-group">
+                        <label>Email ID</label>
+                        <input type="text" id="forgot-email" required>
+                    </div>
+                    <button type="submit" class="btn primary full-width">Send Reset Link</button>
+                    <div class="auth-links">
+                        <a href="#" onclick="showAuth('login')">Back to Login</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="background-effects">
         <div class="grid-overlay"></div>
         <div class="glow-orb glow-1"></div>
         <div class="glow-orb glow-2"></div>
         <div class="glow-orb glow-3"></div>
     </div>
-    <div class="container">
+    <div id="app-container" class="container hidden">
         <header>
             <div class="logo-area">
-                <i class="fa-solid fa-rocket launch-icon"></i>
-                <h1>AI Adoption Champions</h1>
+                <div class="captivate-logo">
+                    <svg class="cap-icon cap-orange" viewBox="0 0 120 80">
+                        <path fill="currentColor" d="M20,50 A30,30 0 0,1 80,50 L110,50 L100,60 L20,60 Z M50,20 A10,10 0 0,1 50,20 Z" />
+                    </svg>
+                    <svg class="cap-icon cap-green" viewBox="0 0 120 80">
+                        <path fill="currentColor" d="M20,50 A30,30 0 0,1 80,50 L110,50 L100,60 L20,60 Z" />
+                    </svg>
+                    <svg class="cap-icon cap-purple" viewBox="0 0 120 80">
+                        <path fill="currentColor" d="M20,50 A30,30 0 0,1 80,50 L110,50 L100,60 L20,60 Z" />
+                    </svg>
+                    <svg class="cap-icon cap-black" viewBox="0 0 120 80">
+                        <path fill="currentColor" d="M20,50 A30,30 0 0,1 80,50 L110,50 L100,60 L20,60 Z" />
+                    </svg>
+                </div>
+                <div class="title-wrapper">
+                    <h1>Cap-tivate</h1>
+                    <p class="subtitle">Master the Core. Maximize your More</p>
+                </div>
             </div>
-            <p class="subtitle">Tracking the pioneers of AI integration</p>
             <div class="header-actions">
                 <button id="add-team-btn" class="btn primary"><i class="fa-solid fa-plus"></i> Add Team</button>
                 <button id="view-report-btn" class="btn secondary"><i class="fa-solid fa-chart-line"></i> Insights Report</button>
                 <button id="view-rules-btn" class="btn secondary"><i class="fa-solid fa-info-circle"></i> Pointing System</button>
+                <button id="logout-btn" class="btn danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
             </div>
         </header>
 
@@ -39,7 +116,7 @@
                 <div class="col rank">Rank</div>
                 <div class="col team">Team</div>
                 <div class="col score">Score</div>
-                <div class="col badges">Badges</div>
+                <div class="col cap-level">Level Cap</div>
                 <div class="col actions">Actions</div>
             </div>
             <div id="leaderboard-list">
@@ -55,7 +132,7 @@
             
             <div class="dashboard-header">
                 <div class="dashboard-icon" id="view-icon">
-                    <i class="fa-solid fa-rocket"></i>
+                    <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <div class="dashboard-info">
                     <h2 id="view-name">Team Name</h2>
@@ -84,12 +161,7 @@
                 </div>
             </div>
 
-            <div class="dashboard-badges">
-                <h3>Earned Badges</h3>
-                <div class="badges-grid" id="view-badges">
-                    <!-- Badges injected here -->
-                </div>
-            </div>
+            <!-- Badges section removed -->
 
             <div class="dashboard-history">
                 <h3>History</h3>
@@ -136,7 +208,7 @@
                         <label class="icon-option"><input type="radio" name="team-icon" value="fa-robot"><i class="fa-solid fa-robot"></i></label>
                         <label class="icon-option"><input type="radio" name="team-icon" value="fa-code-branch"><i class="fa-solid fa-code-branch"></i></label>
                         <label class="icon-option"><input type="radio" name="team-icon" value="fa-microchip"><i class="fa-solid fa-microchip"></i></label>
-                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-rocket"><i class="fa-solid fa-rocket"></i></label>
+                        <label class="icon-option"><input type="radio" name="team-icon" value="fa-graduation-cap"><i class="fa-solid fa-graduation-cap"></i></label>
                     </div>
                 </div>
 
@@ -195,14 +267,12 @@
                     <div class="rule-desc">Weekly AI Tool Usage Streak</div>
                 </div>
                 <div class="rule-item">
-                    <div class="rule-points">Badges</div>
+                    <div class="rule-points">Cap Levels</div>
                     <div class="rule-desc">
-                        <p>🤝 <strong>Collaborator</strong>: Awarded at Level 2 (Explorer)</p>
-                        <p>🏗️ <strong>Builder</strong>: Awarded at Level 3 (Pro)</p>
-                        <p>⚙️ <strong>Optimizer</strong>: Awarded at Level 4 (Master)</p>
-                        <p>🛡️ <strong>Guardian</strong>: Awarded at Level 4 (Master)</p>
-                        <p>💡 <strong>Innovator</strong>: Awarded at Level 5 (Visionary)</p>
-                        <p>🤖 <strong>AI Native</strong>: Awarded at Level 5 (Visionary)</p>
+                        <p><span style="color:#f97316">●</span> <strong>Orange Cap</strong>: 0 - 2,500 pts</p>
+                        <p><span style="color:#39ff14">●</span> <strong>Green Cap</strong>: 2,500 - 6,000 pts</p>
+                        <p><span style="color:#bc13fe">●</span> <strong>Purple Cap</strong>: 6,000 - 12,000 pts</p>
+                        <p><span style="color:#ffffff">●</span> <strong>Black Cap</strong>: 12,000+ pts</p>
                     </div>
                 </div>
             </div>

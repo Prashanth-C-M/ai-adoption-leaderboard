@@ -22,6 +22,12 @@ const db = new sqlite3.Database('./database.db', (err) => {
 });
 
 function initDb() {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
+        password TEXT
+    )`);
+
     db.run(`CREATE TABLE IF NOT EXISTS teams (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
@@ -60,7 +66,44 @@ function initDb() {
     });
 }
 
-// API Routes
+// API Routes - Auth
+app.post('/api/auth/register', (req, res) => {
+    const { email, password } = req.body;
+    db.run("INSERT INTO users (email, password) VALUES (?, ?)", [email, password], function(err) {
+        if (err) {
+            return res.status(400).json({ error: "User already exists or error occurred." });
+        }
+        res.json({ message: "Registered successfully. Please login." });
+    });
+});
+
+app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body;
+    console.log('Login attempt:', { email, password }); // Add this line
+    db.get("SELECT * FROM users WHERE email = ? AND password = ?", [email, password], (err, user) => {
+        if (err) {
+            console.error('Login database error:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        if (!user) {
+            console.log('Login failed for user:', email);
+            return res.status(401).json({ error: "Invalid credentials" });
+        }
+        
+        console.log('Login successful for user:', email);
+        res.json({ message: "Login successful", user: { id: user.id, email: user.email } });
+    });
+});
+
+app.post('/api/auth/check', (req, res) => {
+    const { email } = req.body;
+    db.get("SELECT id FROM users WHERE email = ?", [email], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ exists: !!row });
+    });
+});
+
+// API Routes - Teams
 app.get('/api/teams', (req, res) => {
     db.all("SELECT * FROM teams", [], (err, rows) => {
         if (err) {
