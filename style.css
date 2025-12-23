@@ -636,7 +636,17 @@ h1 {
     transition: all 0.2s;
 }
 
-.close-modal:hover, .close-rules:hover, .close-view:hover, .close-report:hover {
+.close-modal, .close-rules, .close-view, .close-report, .close-reasons {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 2rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.close-modal:hover, .close-rules:hover, .close-view:hover, .close-report:hover, .close-reasons:hover {
     color: var(--danger);
     text-shadow: 0 0 10px var(--danger);
     transform: rotate(90deg);

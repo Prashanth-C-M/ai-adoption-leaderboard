@@ -147,6 +147,43 @@ app.get('/api/reasons', (req, res) => {
     });
 });
 
+app.post('/api/reasons', (req, res) => {
+    const { reason, description, points } = req.body;
+    const sql = "INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)";
+    
+    db.run(sql, [reason, description, points], function(err) {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({ id: this.lastID, reason, description, points });
+    });
+});
+
+app.put('/api/reasons/:id', (req, res) => {
+    const { reason, description, points } = req.body;
+    const sql = "UPDATE reason_mappings SET reason = ?, description = ?, points = ? WHERE id = ?";
+    
+    db.run(sql, [reason, description, points, req.params.id], function(err) {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({ message: "Updated", changes: this.changes });
+    });
+});
+
+app.delete('/api/reasons/:id', (req, res) => {
+    const sql = "DELETE FROM reason_mappings WHERE id = ?";
+    db.run(sql, req.params.id, function(err) {
+        if (err) {
+            res.status(400).json({ error: err.message });
+            return;
+        }
+        res.json({ message: "Deleted", changes: this.changes });
+    });
+});
+
 // API Routes - Teams
 app.get('/api/teams', (req, res) => {
     db.all("SELECT * FROM teams", [], (err, rows) => {

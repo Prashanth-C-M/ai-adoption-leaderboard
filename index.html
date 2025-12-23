@@ -103,6 +103,7 @@
                 <button id="add-team-btn" class="btn primary"><i class="fa-solid fa-plus"></i> Add Team</button>
                 <button id="view-report-btn" class="btn secondary"><i class="fa-solid fa-chart-line"></i> Insights Report</button>
                 <button id="view-rules-btn" class="btn secondary"><i class="fa-solid fa-info-circle"></i> Pointing System</button>
+                <button id="manage-reasons-btn" class="btn secondary hidden"><i class="fa-solid fa-list-check"></i> Manage Reasons</button>
                 <button id="logout-btn" class="btn danger"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
             </div>
         </header>
@@ -278,6 +279,37 @@
                         <p><span style="color:#ffffff">●</span> <strong>Black Cap</strong>: 12,000+ pts</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Reasons Modal -->
+    <div id="reasons-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-reasons">&times;</span>
+            <h2>Manage Reasons</h2>
+            
+            <form id="reason-form" style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
+                <input type="hidden" id="reason-id" value="-1">
+                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 1rem; align-items: end;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Reason</label>
+                        <input type="text" id="reason-text" required placeholder="Short reason">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Description</label>
+                        <input type="text" id="reason-desc" required placeholder="Detailed description">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Points</label>
+                        <input type="number" id="reason-points" required placeholder="Pts">
+                    </div>
+                    <button type="submit" class="btn primary" style="margin-top: 0; height: 50px;">Save</button>
+                </div>
+            </form>
+
+            <div id="reasons-list" class="rules-list" style="max-height: 400px; overflow-y: auto;">
+                <!-- Reasons injected here -->
             </div>
         </div>
     </div>

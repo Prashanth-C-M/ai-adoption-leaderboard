@@ -14,6 +14,10 @@ function initAuth() {
     if (currentUser) {
         document.getElementById('auth-overlay').classList.add('hidden');
         document.getElementById('app-container').classList.remove('hidden');
+        
+        if (currentUser === 'Prashanth.C@brillio.com') {
+            document.getElementById('manage-reasons-btn').classList.remove('hidden');
+        }
     } else {
         document.getElementById('auth-overlay').classList.remove('hidden');
         document.getElementById('app-container').classList.add('hidden');
@@ -237,6 +241,13 @@ const modalTitle = document.getElementById('modal-title');
 const editIndexInput = document.getElementById('edit-index');
 const podiumDisplay = document.getElementById('podium-display');
 
+// Reasons Modal Elements
+const reasonsModal = document.getElementById('reasons-modal');
+const manageReasonsBtn = document.getElementById('manage-reasons-btn');
+const closeReasonsBtn = document.querySelector('.close-reasons');
+const reasonForm = document.getElementById('reason-form');
+const reasonsList = document.getElementById('reasons-list');
+
 // Report Modal Elements
 const reportModal = document.getElementById('report-modal');
 const closeReportBtn = document.querySelector('.close-report');
@@ -360,6 +371,103 @@ addTeamBtn.addEventListener('click', () => {
     openModal(false);
 });
 viewReportBtn.addEventListener('click', renderReports);
+if(manageReasonsBtn) manageReasonsBtn.addEventListener('click', openReasonsManager);
+if(closeReasonsBtn) closeReasonsBtn.addEventListener('click', closeReasons);
+if(reasonForm) reasonForm.addEventListener('submit', handleReasonSubmit);
+
+function openReasonsManager() {
+    reasonsModal.style.display = 'flex';
+    renderReasonsList();
+}
+
+function closeReasons() {
+    reasonsModal.style.display = 'none';
+}
+
+function renderReasonsList() {
+    reasonsList.innerHTML = '';
+    reasonMappings.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'rule-item';
+        div.style.justifyContent = 'space-between';
+        div.innerHTML = `
+            <div style="display:flex; align-items:center; gap:1.5rem; flex:1;">
+                <div class="rule-points">+${r.points} pts</div>
+                <div style="flex:1;">
+                    <div style="color:var(--text-primary); font-weight:bold; margin-bottom:0.2rem;">${r.reason}</div>
+                    <div class="rule-desc" style="font-size:0.9rem;">${r.description}</div>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="btn edit" onclick="editReason(${r.id})"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn danger" onclick="deleteReason(${r.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+        reasonsList.appendChild(div);
+    });
+}
+
+window.editReason = function(id) {
+    const reason = reasonMappings.find(r => r.id === id);
+    if(reason) {
+        document.getElementById('reason-id').value = reason.id;
+        document.getElementById('reason-text').value = reason.reason;
+        document.getElementById('reason-desc').value = reason.description;
+        document.getElementById('reason-points').value = reason.points;
+    }
+};
+
+window.deleteReason = async function(id) {
+    if(confirm('Delete this reason?')) {
+        try {
+            await fetch(`${API_BASE_URL}/api/reasons/${id}`, { method: 'DELETE' });
+            await fetchReasons(); // Refresh data
+            renderReasonsList();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+};
+
+async function handleReasonSubmit(e) {
+    e.preventDefault();
+    console.log("Submitting reason form...");
+    const id = parseInt(document.getElementById('reason-id').value);
+    const reason = document.getElementById('reason-text').value;
+    const description = document.getElementById('reason-desc').value;
+    const points = parseInt(document.getElementById('reason-points').value);
+
+    const method = id > -1 ? 'PUT' : 'POST';
+    const url = id > -1 ? `${API_BASE_URL}/api/reasons/${id}` : `${API_BASE_URL}/api/reasons`;
+
+    console.log(`Method: ${method}, URL: ${url}, Data:`, { reason, description, points });
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason, description, points })
+        });
+
+        if (!res.ok) {
+            const errData = await res.json();
+            console.error("API Error:", errData);
+            throw new Error(errData.error || "Failed to save");
+        }
+        
+        console.log("Save successful");
+
+        // Reset form
+        document.getElementById('reason-id').value = -1;
+        document.getElementById('reason-form').reset();
+        
+        await fetchReasons(); // Refresh global data
+        renderReasonsList();
+    } catch (e) {
+        console.error("Submit error:", e);
+        alert('Error saving reason: ' + e.message);
+    }
+}
 
 function renderReports() {
     reportModal.style.display = 'flex';
@@ -720,7 +828,7 @@ window.deleteTeam = async function(index) {
 };
 
 function launchFireworks() {
-    const duration = 5000;
+    const duration = 3000;
     const endTime = Date.now() + duration;
     const colors = ['#00f3ff', '#bc13fe', '#39ff14', '#ffd700', '#ff003c', '#ffffff'];
 
@@ -809,7 +917,7 @@ function createExplosion(x, y, color) {
 }
 
 function launchComets() {
-    const duration = 5000;
+    const duration = 3000;
     const endTime = Date.now() + duration;
     
     const interval = setInterval(() => {
