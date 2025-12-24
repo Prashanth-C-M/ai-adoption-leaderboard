@@ -553,27 +553,16 @@ function renderReports() {
         }
     });
 
-    // --- CHART 2: Adoption Momentum (Line) ---
+    // --- CHART 2: Activity Momentum (Line) ---
     const ctxMom = document.getElementById('momentumChart').getContext('2d');
     
-    // Aggregate points per date
-    const pointsPerDate = {};
-    teams.forEach(t => {
-        (t.history || []).forEach(h => {
-             if(h.date) pointsPerDate[h.date] = (pointsPerDate[h.date] || 0) + h.points;
-        });
-    });
-    
-    const momDates = Object.keys(pointsPerDate).sort();
-    const momData = momDates.map(d => pointsPerDate[d]);
-
     chartInstances.momentum = new Chart(ctxMom, {
         type: 'line',
         data: {
-            labels: momDates,
+            labels: [],
             datasets: [{
                 label: 'Daily Points',
-                data: momData,
+                data: [],
                 borderColor: '#39ff14',
                 backgroundColor: 'rgba(57, 255, 20, 0.1)',
                 tension: 0.4,
@@ -590,6 +579,9 @@ function renderReports() {
             plugins: { legend: { display: false } }
         }
     });
+    
+    // Initialize with Weekly view
+    updateMomentum('weekly');
 
     // --- CHART 3: Impact Breakdown (Doughnut) ---
     const ctxBreak = document.getElementById('breakdownChart').getContext('2d');
@@ -890,6 +882,52 @@ window.deleteTeam = async function(index) {
             console.error("Error deleting team:", error);
         }
     }
+};
+
+window.updateMomentum = function(viewType) {
+    if (!chartInstances.momentum) return;
+
+    // 1. UI Update
+    document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
+    const btnMap = { 'weekly': '1W', 'monthly': '1M', 'yearly': '1Y' };
+    const buttons = Array.from(document.querySelectorAll('.chart-btn'));
+    const activeBtn = buttons.find(b => b.textContent === btnMap[viewType]);
+    if(activeBtn) activeBtn.classList.add('active');
+
+    // 2. Data Filtering
+    const now = new Date();
+    // Set to end of day to include today's points fully if needed, or just compare dates
+    now.setHours(23, 59, 59, 999);
+    
+    let startDate = new Date();
+    
+    if (viewType === 'weekly') startDate.setDate(now.getDate() - 7);
+    if (viewType === 'monthly') startDate.setDate(now.getDate() - 30);
+    if (viewType === 'yearly') startDate.setDate(now.getDate() - 365);
+    
+    // Reset time for start date to beginning of day
+    startDate.setHours(0, 0, 0, 0);
+
+    const pointsPerDate = {};
+    teams.forEach(t => {
+        (t.history || []).forEach(h => {
+             if(h.date) {
+                 const d = new Date(h.date);
+                 // Check if date is within range
+                 if (d >= startDate && d <= now) {
+                     pointsPerDate[h.date] = (pointsPerDate[h.date] || 0) + h.points;
+                 }
+             }
+        });
+    });
+
+    const sortedDates = Object.keys(pointsPerDate).sort();
+    const dataPoints = sortedDates.map(d => pointsPerDate[d]);
+
+    // 3. Chart Update
+    chartInstances.momentum.data.labels = sortedDates;
+    chartInstances.momentum.data.datasets[0].data = dataPoints;
+    chartInstances.momentum.update();
 };
 
 function launchFireworks() {

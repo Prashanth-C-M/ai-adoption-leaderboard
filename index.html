@@ -248,7 +248,14 @@
                     <canvas id="topSquadsChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>🚀 Activity Momentum</h3>
+                    <div class="chart-header">
+                        <h3>🚀 Activity Momentum</h3>
+                        <div class="chart-controls">
+                            <button class="chart-btn active" onclick="updateMomentum('weekly')">1W</button>
+                            <button class="chart-btn" onclick="updateMomentum('monthly')">1M</button>
+                            <button class="chart-btn" onclick="updateMomentum('yearly')">1Y</button>
+                        </div>
+                    </div>
                     <canvas id="momentumChart"></canvas>
                 </div>
                 <div class="chart-card">
