@@ -42,11 +42,15 @@ function initDb() {
             db.get("SELECT count(*) as count FROM teams", (err, row) => {
                 if (row.count === 0) {
                     console.log("Seeding database...");
+                    const today = new Date();
+                    const day = 86400000;
+                    const d = (days) => new Date(today.getTime() - days * day).toISOString().split('T')[0];
+
                     const initialTeams = [
-                        { name: "Neural Nexus", icon: "fa-brain", score: 9850, history: JSON.stringify([{ points: 500, reason: "Launch MVP", date: "2023-10-01" }, { points: 200, reason: "Weekly Streak", date: "2023-10-08" }]) },
-                        { name: "Data Dynamos", icon: "fa-database", score: 9420, history: "[]" },
-                        { name: "Cyber Synapse", icon: "fa-network-wired", score: 8900, history: "[]" },
-                        { name: "Algorithm Allies", icon: "fa-code-branch", score: 8550, history: "[]" },
+                        { name: "Neural Nexus", icon: "fa-brain", score: 9850, history: JSON.stringify([{ points: 500, reason: "Launch MVP", date: d(10) }, { points: 200, reason: "Weekly Streak", date: d(3) }]) },
+                        { name: "Data Dynamos", icon: "fa-database", score: 9420, history: JSON.stringify([{ points: 300, reason: "Mentorship", date: d(2) }]) },
+                        { name: "Cyber Synapse", icon: "fa-network-wired", score: 8900, history: JSON.stringify([{ points: 100, reason: "Weekly Streak", date: d(1) }]) },
+                        { name: "Algorithm Allies", icon: "fa-code-branch", score: 8550, history: JSON.stringify([{ points: 500, reason: "Complete AI Course", date: d(5) }]) },
                         { name: "Silicon Squad", icon: "fa-microchip", score: 8100, history: "[]" },
                         { name: "Quantum Quest", icon: "fa-atom", score: 7800, history: "[]" },
                         { name: "Logic Legends", icon: "fa-puzzle-piece", score: 7450, history: "[]" },

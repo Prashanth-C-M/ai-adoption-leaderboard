@@ -496,83 +496,38 @@ async function handleReasonSubmit(e) {
 
 function renderReports() {
     reportModal.style.display = 'flex';
-    console.log("Rendering Reports...");
-    console.log("Teams Data:", teams);
     
-    // Destroy existing charts if any
+    // 0. Cleanup old charts
     if (Object.keys(chartInstances).length > 0) {
         Object.values(chartInstances).forEach(chart => chart.destroy());
     }
 
-    // --- Chart 1: Engagement Levels (Pie) ---
-    const ctxLevel = document.getElementById('levelChart').getContext('2d');
-    const levelCounts = { 'No Cap': 0, 'Orange Cap': 0, 'Green Cap': 0, 'Purple Cap': 0, 'Black Cap': 0 };
+    // 1. Simple Stats (Keep existing logic)
+    const totalPoints = teams.reduce((sum, team) => sum + team.score, 0);
+    document.getElementById('total-points-display').textContent = totalPoints.toLocaleString();
     
+    const topTeam = teams.length > 0 ? teams.reduce((prev, current) => (prev.score > current.score) ? prev : current) : null;
+    document.getElementById('top-team-display').textContent = topTeam ? topTeam.name : '-';
+    
+    const dateCounts = {};
     teams.forEach(t => {
-        const lvl = calculateLevel(t.score).name;
-        levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
-    });
-
-    chartInstances.level = new Chart(ctxLevel, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(levelCounts),
-            datasets: [{
-                data: Object.values(levelCounts),
-                backgroundColor: ['#64748b', '#f97316', '#39ff14', '#bc13fe', '#ffffff'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            plugins: {
-                legend: { position: 'right', labels: { color: '#e2e8f0' } }
-            }
-        }
-    });
-
-    // --- Chart 2: Activity Trends (Line - Mock Data based on history) ---
-    const ctxActivity = document.getElementById('activityChart').getContext('2d');
-    
-    // Aggregate history by date
-    const dateMap = {};
-    teams.forEach(t => {
-        if(t.history) {
-            t.history.forEach(h => {
-                if(h.date) {
-                    dateMap[h.date] = (dateMap[h.date] || 0) + h.points;
-                }
-            });
-        }
+        (t.history || []).forEach(h => {
+            if(h.date) dateCounts[h.date] = (dateCounts[h.date] || 0) + 1;
+        });
     });
     
-    // Sort dates
-    const sortedDates = Object.keys(dateMap).sort().slice(-7); // Last 7 active days
-    const datePoints = sortedDates.map(d => dateMap[d]);
-
-    chartInstances.activity = new Chart(ctxActivity, {
-        type: 'line',
-        data: {
-            labels: sortedDates,
-            datasets: [{
-                label: 'Total Points Awarded',
-                data: datePoints,
-                borderColor: '#00f3ff',
-                tension: 0.4,
-                fill: true,
-                backgroundColor: 'rgba(0, 243, 255, 0.1)'
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            },
-            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+    let mostActiveDate = '-';
+    let maxCount = 0;
+    for(const [date, count] of Object.entries(dateCounts)) {
+        if(count > maxCount) {
+            maxCount = count;
+            mostActiveDate = date;
         }
-    });
+    }
+    document.getElementById('active-day-display').textContent = mostActiveDate;
 
-    // --- Chart 3: Top Teams (Bar) ---
-    const ctxTop = document.getElementById('topChart').getContext('2d');
+    // --- CHART 1: Top Squads (Horizontal Bar) ---
+    const ctxTop = document.getElementById('topSquadsChart').getContext('2d');
     const top5 = [...teams].sort((a, b) => b.score - a.score).slice(0, 5);
     
     chartInstances.top = new Chart(ctxTop, {
@@ -580,204 +535,150 @@ function renderReports() {
         data: {
             labels: top5.map(t => t.name),
             datasets: [{
-                label: 'Current Score',
+                label: 'Score',
                 data: top5.map(t => t.score),
-                backgroundColor: [
-                    'rgba(255, 215, 0, 0.8)', // Gold
-                    'rgba(192, 192, 192, 0.8)', // Silver
-                    'rgba(205, 127, 50, 0.8)', // Bronze
-                    'rgba(0, 243, 255, 0.6)',
-                    'rgba(0, 243, 255, 0.4)'
-                ],
-                borderColor: 'transparent',
-                borderWidth: 0,
+                backgroundColor: ['#ffd700', '#c0c0c0', '#cd7f32', '#00f3ff', '#bc13fe'],
                 borderRadius: 4
             }]
         },
         options: {
             indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
-                x: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                y: { ticks: { color: '#e2e8f0', font: { weight: 'bold' } }, grid: { display: false } }
+                x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                y: { grid: { display: false }, ticks: { color: '#e2e8f0' } }
             },
             plugins: { legend: { display: false } }
         }
     });
 
-    // --- Chart 4: Activity Count (Bar - Mock) ---
-    const ctxCount = document.getElementById('activityCountChart').getContext('2d');
+    // --- CHART 2: Adoption Momentum (Line) ---
+    const ctxMom = document.getElementById('momentumChart').getContext('2d');
     
-    // Count activities per day
-    const activityCountMap = {};
+    // Aggregate points per date
+    const pointsPerDate = {};
     teams.forEach(t => {
-        if(t.history) {
-            t.history.forEach(h => {
-                if(h.date) {
-                    activityCountMap[h.date] = (activityCountMap[h.date] || 0) + 1;
-                }
-            });
-        }
-    });
-    
-    const countDates = Object.keys(activityCountMap).sort().slice(-7);
-    const activityCounts = countDates.map(d => activityCountMap[d]);
-
-    chartInstances.count = new Chart(ctxCount, {
-        type: 'bar',
-        data: {
-            labels: countDates,
-            datasets: [{
-                label: 'Number of Activities',
-                data: activityCounts,
-                backgroundColor: '#bc13fe',
-                borderRadius: 4
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    // --- New Chart: Top 3 Weekly Gainers (Bar) ---
-    const ctxWeekly = document.getElementById('weeklyGainersChart').getContext('2d');
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    
-    const weeklyGainers = teams.map(t => {
-        const weeklyPoints = (t.history || [])
-            .filter(h => new Date(h.date) >= oneWeekAgo)
-            .reduce((sum, h) => sum + h.points, 0);
-        return { name: t.name, points: weeklyPoints };
-    }).sort((a, b) => b.points - a.points).slice(0, 3);
-
-    chartInstances.weekly = new Chart(ctxWeekly, {
-        type: 'bar',
-        data: {
-            labels: weeklyGainers.map(t => t.name),
-            datasets: [{
-                label: 'Points Gained (Last 7 Days)',
-                data: weeklyGainers.map(t => t.points),
-                backgroundColor: ['#39ff14', '#00f3ff', '#f97316'],
-                borderRadius: 4
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            scales: {
-                x: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                y: { ticks: { color: '#e2e8f0' }, grid: { display: false } }
-            },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    // --- New Chart: Cumulative Points Trend (Line) ---
-    const ctxTrend = document.getElementById('cumulativeTrendChart').getContext('2d');
-    
-    // Collect all dates
-    const allDatesSet = new Set();
-    teams.forEach(t => (t.history || []).forEach(h => allDatesSet.add(h.date)));
-    const allDates = Array.from(allDatesSet).sort();
-    
-    const datasets = teams.slice(0, 5).map((t, index) => { // Top 5 teams only to avoid clutter
-        let cumulative = 0;
-        // Start from initial score if history is incomplete (simplified assumption: current score - history sum = initial)
-        const historySum = (t.history || []).reduce((sum, h) => sum + h.points, 0);
-        let baseScore = t.score - historySum;
-        cumulative = baseScore;
-
-        const data = allDates.map(date => {
-            const pointsOnDate = (t.history || [])
-                .filter(h => h.date === date)
-                .reduce((sum, h) => sum + h.points, 0);
-            cumulative += pointsOnDate;
-            return cumulative;
+        (t.history || []).forEach(h => {
+             if(h.date) pointsPerDate[h.date] = (pointsPerDate[h.date] || 0) + h.points;
         });
-
-        const colors = ['#00f3ff', '#bc13fe', '#39ff14', '#f97316', '#ffffff'];
-        return {
-            label: t.name,
-            data: data,
-            borderColor: colors[index % colors.length],
-            tension: 0.1,
-            fill: false
-        };
     });
+    
+    const momDates = Object.keys(pointsPerDate).sort();
+    const momData = momDates.map(d => pointsPerDate[d]);
 
-    chartInstances.trend = new Chart(ctxTrend, {
+    chartInstances.momentum = new Chart(ctxMom, {
         type: 'line',
         data: {
-            labels: allDates,
-            datasets: datasets
+            labels: momDates,
+            datasets: [{
+                label: 'Daily Points',
+                data: momData,
+                borderColor: '#39ff14',
+                backgroundColor: 'rgba(57, 255, 20, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
         },
         options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
             },
-            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+            plugins: { legend: { display: false } }
         }
     });
 
-    // --- New View: Fastest to Level Up ---
-    const levels = [
-        { name: "Orange Cap", threshold: 1000 },
-        { name: "Green Cap", threshold: 3000 },
-        { name: "Purple Cap", threshold: 6000 },
-        { name: "Black Cap", threshold: 12000 }
-    ];
-
-    let fastestHtml = '<div class="fastest-list">';
-    
-    levels.forEach(lvl => {
-        let fastestTeam = null;
-        let fastestDate = null;
-
-        teams.forEach(t => {
-            if (t.score >= lvl.threshold) {
-                // Replay history to find when they crossed the threshold
-                let runningScore = t.score - (t.history || []).reduce((s, h) => s + h.points, 0);
-                let crossDate = null;
-                
-                // Sort history chronologically
-                const sortedHistory = [...(t.history || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
-                
-                for (const h of sortedHistory) {
-                    runningScore += h.points;
-                    if (runningScore >= lvl.threshold) {
-                        crossDate = h.date;
-                        break;
-                    }
-                }
-                
-                // If they started above threshold (or no history), treat as "Unknown" or skip
-                if (!crossDate && runningScore >= lvl.threshold) crossDate = "2023-01-01"; // Fallback for seeded data
-
-                if (crossDate) {
-                    if (!fastestDate || new Date(crossDate) < new Date(fastestDate)) {
-                        fastestDate = crossDate;
-                        fastestTeam = t.name;
-                    }
-                }
-            }
+    // --- CHART 3: Impact Breakdown (Doughnut) ---
+    const ctxBreak = document.getElementById('breakdownChart').getContext('2d');
+    const reasonCounts = {};
+    teams.forEach(t => {
+        (t.history || []).forEach(h => {
+             if(h.reason) reasonCounts[h.reason] = (reasonCounts[h.reason] || 0) + 1;
         });
+    });
 
-        if (fastestTeam) {
-            fastestHtml += `
-                <div class="fastest-item">
-                    <span class="fastest-cap" style="color:${getCapColor(lvl.name)}">${lvl.name}</span>
-                    <span class="fastest-name">${fastestTeam}</span>
-                    <span class="fastest-date">${fastestDate}</span>
-                </div>
-            `;
+    chartInstances.breakdown = new Chart(ctxBreak, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(reasonCounts),
+            datasets: [{
+                data: Object.values(reasonCounts),
+                backgroundColor: ['#00f3ff', '#bc13fe', '#39ff14', '#f97316', '#ffd700', '#ff003c'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: 10
+            },
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#e2e8f0', boxWidth: 10, font: { size: 10 } } }
+            }
         }
     });
-    fastestHtml += '</div>';
-    document.getElementById('fastest-level-container').innerHTML = fastestHtml;
+
+    // --- CHART 4: Mastery Levels (Bar) ---
+    const ctxLevels = document.getElementById('levelsChart').getContext('2d');
+    const levelCounts = { 'No Cap': 0, 'Orange Cap': 0, 'Green Cap': 0, 'Purple Cap': 0, 'Black Cap': 0 };
+    teams.forEach(t => {
+        const lvl = calculateLevel(t.score).name;
+        levelCounts[lvl] = (levelCounts[lvl] || 0) + 1;
+    });
+
+    chartInstances.levels = new Chart(ctxLevels, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(levelCounts),
+            datasets: [{
+                label: 'Teams',
+                data: Object.values(levelCounts),
+                backgroundColor: ['#64748b', '#f97316', '#39ff14', '#bc13fe', '#ffffff'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1, color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                x: { grid: { display: false }, ticks: { color: '#e2e8f0' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+    
+    // 4. Recent Activities (Keep existing logic)
+    const allHistory = [];
+    teams.forEach(t => {
+        (t.history || []).forEach(h => {
+            allHistory.push({ ...h, teamName: t.name, teamIcon: t.icon });
+        });
+    });
+    
+    // Sort by date desc
+    allHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    const activityList = document.getElementById('recent-activities-list');
+    activityList.innerHTML = '';
+    
+    allHistory.slice(0, 10).forEach(item => { // Show top 10
+        const div = document.createElement('div');
+        div.className = 'activity-item';
+        div.innerHTML = `
+            <div class="activity-icon"><i class="fa-solid ${item.teamIcon}"></i></div>
+            <div class="activity-details">
+                <div class="activity-title">${item.teamName}</div>
+                <div class="activity-meta">${item.reason} • ${item.date}</div>
+            </div>
+            <div class="activity-points">+${item.points}</div>
+        `;
+        activityList.appendChild(div);
+    });
 }
 viewRulesBtn.addEventListener('click', openRules);
 closeModalBtn.addEventListener('click', closeModal);

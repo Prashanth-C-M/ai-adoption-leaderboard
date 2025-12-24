@@ -963,6 +963,15 @@ input:focus, select:focus {
     border: 1px solid var(--border-color);
     padding: 1.5rem;
     position: relative;
+    height: 350px; /* Fixed height for charts */
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-card canvas {
+    flex: 1;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .full-width-chart {
@@ -1142,4 +1151,130 @@ input:focus, select:focus {
 
 .error-msg.hidden {
     display: none;
+}
+
+/* Simple Report Styles */
+.simple-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.stat-box:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+}
+
+.stat-box h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    border: none;
+    padding: 0;
+}
+
+.big-number {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+}
+
+.highlight-text {
+    font-family: var(--font-ui);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.recent-activity-section h3 {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    border-left: 4px solid var(--accent);
+    padding-left: 1rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.activity-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(0, 243, 255, 0.3);
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 243, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    margin-right: 1rem;
+    font-size: 1.1rem;
+}
+
+.activity-details {
+    flex: 1;
+}
+
+.activity-title {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+
+.activity-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.activity-points {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--success);
+    font-size: 1.1rem;
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.4);
+}
+
+@media (max-width: 768px) {
+    .simple-stats-grid {
+        grid-template-columns: 1fr;
+    }
 }

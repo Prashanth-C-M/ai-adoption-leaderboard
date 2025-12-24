@@ -225,30 +225,46 @@
     <div id="report-modal" class="modal">
         <div class="modal-content report-modal-content">
             <span class="close-report">&times;</span>
-            <h2>📊 AI Adoption Insights</h2>
+            <h2>📊 Insights Dashboard</h2>
             
-            <div class="charts-grid">
+            <div class="simple-stats-grid">
+                <div class="stat-box">
+                    <h3>Total Points Awarded</h3>
+                    <div id="total-points-display" class="big-number">0</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Top Performing Team</h3>
+                    <div id="top-team-display" class="highlight-text">-</div>
+                </div>
+                <div class="stat-box">
+                    <h3>Most Active Day</h3>
+                    <div id="active-day-display" class="highlight-text">-</div>
+                </div>
+            </div>
+
+            <div class="charts-grid" style="margin-bottom: 2.5rem;">
                 <div class="chart-card">
-                    <h3>Top 3 Weekly Gainers</h3>
-                    <canvas id="weeklyGainersChart"></canvas>
+                    <h3>🏆 Top Squads</h3>
+                    <canvas id="topSquadsChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Fastest to Level Up</h3>
-                    <div id="fastest-level-container" class="fastest-container">
-                        <!-- Injected via JS -->
-                    </div>
-                </div>
-                <div class="chart-card full-width-chart">
-                    <h3>Cumulative Points Trend</h3>
-                    <canvas id="cumulativeTrendChart"></canvas>
+                    <h3>🚀 Activity Momentum</h3>
+                    <canvas id="momentumChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Engagement Levels</h3>
-                    <canvas id="levelChart"></canvas>
+                    <h3>🎯 Impact Breakdown</h3>
+                    <canvas id="breakdownChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>Activity Count (Last 7 Days)</h3>
-                    <canvas id="activityCountChart"></canvas>
+                    <h3>🎓 Mastery Levels</h3>
+                    <canvas id="levelsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="recent-activity-section">
+                <h3>Recent Activities</h3>
+                <div id="recent-activities-list" class="activity-list">
+                    <!-- List injected via JS -->
                 </div>
             </div>
         </div>
