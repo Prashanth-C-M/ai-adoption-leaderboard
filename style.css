@@ -448,6 +448,26 @@ h1 {
     position: relative;
 }
 
+.podium-icon-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.podium-cap {
+    position: absolute;
+    top: -20px;
+    right: -15px;
+    z-index: 5;
+    transform: rotate(15deg);
+    filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
+    animation: floatCap 3s ease-in-out infinite;
+}
+
+@keyframes floatCap {
+    0%, 100% { transform: rotate(15deg) translateY(0); }
+    50% { transform: rotate(15deg) translateY(-5px); }
+}
+
 /* Decorative corner pieces for the container */
 .leaderboard-container::before {
     content: '';
@@ -943,6 +963,46 @@ input:focus, select:focus {
     border: 1px solid var(--border-color);
     padding: 1.5rem;
     position: relative;
+}
+
+.full-width-chart {
+    grid-column: span 2;
+}
+
+.fastest-container {
+    height: 300px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.fastest-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.fastest-cap {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    width: 30%;
+}
+
+.fastest-name {
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    width: 40%;
+}
+
+.fastest-date {
+    font-family: var(--font-ui);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    width: 30%;
+    text-align: right;
 }
 
 .chart-card::after {

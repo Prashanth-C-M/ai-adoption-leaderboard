@@ -290,8 +290,23 @@ function getCapSvg(color) {
 
 // Render Leaderboard
 function renderLeaderboard() {
-    // Sort teams by score descending
-    teams.sort((a, b) => b.score - a.score);
+    // Sort teams by score descending, then by earliest achievement date
+    teams.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        
+        // Tie-breaker: Earlier last update wins
+        const getLastUpdate = (team) => {
+            if (team.history && team.history.length > 0) {
+                // Return timestamp of last history item
+                return new Date(team.history[team.history.length - 1].date).getTime();
+            }
+            return 0; // Teams with no history (initial seed) treated as "oldest"
+        };
+
+        return getLastUpdate(a) - getLastUpdate(b);
+    });
 
     leaderboardList.innerHTML = ''; // Clear existing content
     podiumDisplay.innerHTML = ''; // Clear podium
@@ -304,11 +319,21 @@ function renderLeaderboard() {
             if (teams[idx]) {
                 const team = teams[idx];
                 const rank = idx + 1;
+                const levelData = calculateLevel(team.score);
+                let capHtml = '';
+                if (levelData.level > 0) {
+                    const capColor = getCapColor(levelData.name);
+                    capHtml = `<div class="podium-cap" title="${levelData.name}">${getCapSvg(capColor)}</div>`;
+                }
+
                 const div = document.createElement('div');
                 div.className = `podium-item podium-${rank}`;
                 div.innerHTML = `
                     <div class="podium-content">
-                        <div class="podium-icon"><i class="fa-solid ${team.icon}"></i></div>
+                        <div class="podium-icon-wrapper">
+                            ${capHtml}
+                            <div class="podium-icon"><i class="fa-solid ${team.icon}"></i></div>
+                        </div>
                         <div class="podium-name">${team.name}</div>
                         <div class="podium-score">${team.score.toLocaleString()} pts</div>
                     </div>
@@ -471,6 +496,8 @@ async function handleReasonSubmit(e) {
 
 function renderReports() {
     reportModal.style.display = 'flex';
+    console.log("Rendering Reports...");
+    console.log("Teams Data:", teams);
     
     // Destroy existing charts if any
     if (Object.keys(chartInstances).length > 0) {
@@ -614,6 +641,143 @@ function renderReports() {
             plugins: { legend: { display: false } }
         }
     });
+
+    // --- New Chart: Top 3 Weekly Gainers (Bar) ---
+    const ctxWeekly = document.getElementById('weeklyGainersChart').getContext('2d');
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
+    const weeklyGainers = teams.map(t => {
+        const weeklyPoints = (t.history || [])
+            .filter(h => new Date(h.date) >= oneWeekAgo)
+            .reduce((sum, h) => sum + h.points, 0);
+        return { name: t.name, points: weeklyPoints };
+    }).sort((a, b) => b.points - a.points).slice(0, 3);
+
+    chartInstances.weekly = new Chart(ctxWeekly, {
+        type: 'bar',
+        data: {
+            labels: weeklyGainers.map(t => t.name),
+            datasets: [{
+                label: 'Points Gained (Last 7 Days)',
+                data: weeklyGainers.map(t => t.points),
+                backgroundColor: ['#39ff14', '#00f3ff', '#f97316'],
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            scales: {
+                x: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                y: { ticks: { color: '#e2e8f0' }, grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // --- New Chart: Cumulative Points Trend (Line) ---
+    const ctxTrend = document.getElementById('cumulativeTrendChart').getContext('2d');
+    
+    // Collect all dates
+    const allDatesSet = new Set();
+    teams.forEach(t => (t.history || []).forEach(h => allDatesSet.add(h.date)));
+    const allDates = Array.from(allDatesSet).sort();
+    
+    const datasets = teams.slice(0, 5).map((t, index) => { // Top 5 teams only to avoid clutter
+        let cumulative = 0;
+        // Start from initial score if history is incomplete (simplified assumption: current score - history sum = initial)
+        const historySum = (t.history || []).reduce((sum, h) => sum + h.points, 0);
+        let baseScore = t.score - historySum;
+        cumulative = baseScore;
+
+        const data = allDates.map(date => {
+            const pointsOnDate = (t.history || [])
+                .filter(h => h.date === date)
+                .reduce((sum, h) => sum + h.points, 0);
+            cumulative += pointsOnDate;
+            return cumulative;
+        });
+
+        const colors = ['#00f3ff', '#bc13fe', '#39ff14', '#f97316', '#ffffff'];
+        return {
+            label: t.name,
+            data: data,
+            borderColor: colors[index % colors.length],
+            tension: 0.1,
+            fill: false
+        };
+    });
+
+    chartInstances.trend = new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+            labels: allDates,
+            datasets: datasets
+        },
+        options: {
+            scales: {
+                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+            },
+            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+        }
+    });
+
+    // --- New View: Fastest to Level Up ---
+    const levels = [
+        { name: "Orange Cap", threshold: 1000 },
+        { name: "Green Cap", threshold: 3000 },
+        { name: "Purple Cap", threshold: 6000 },
+        { name: "Black Cap", threshold: 12000 }
+    ];
+
+    let fastestHtml = '<div class="fastest-list">';
+    
+    levels.forEach(lvl => {
+        let fastestTeam = null;
+        let fastestDate = null;
+
+        teams.forEach(t => {
+            if (t.score >= lvl.threshold) {
+                // Replay history to find when they crossed the threshold
+                let runningScore = t.score - (t.history || []).reduce((s, h) => s + h.points, 0);
+                let crossDate = null;
+                
+                // Sort history chronologically
+                const sortedHistory = [...(t.history || [])].sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                for (const h of sortedHistory) {
+                    runningScore += h.points;
+                    if (runningScore >= lvl.threshold) {
+                        crossDate = h.date;
+                        break;
+                    }
+                }
+                
+                // If they started above threshold (or no history), treat as "Unknown" or skip
+                if (!crossDate && runningScore >= lvl.threshold) crossDate = "2023-01-01"; // Fallback for seeded data
+
+                if (crossDate) {
+                    if (!fastestDate || new Date(crossDate) < new Date(fastestDate)) {
+                        fastestDate = crossDate;
+                        fastestTeam = t.name;
+                    }
+                }
+            }
+        });
+
+        if (fastestTeam) {
+            fastestHtml += `
+                <div class="fastest-item">
+                    <span class="fastest-cap" style="color:${getCapColor(lvl.name)}">${lvl.name}</span>
+                    <span class="fastest-name">${fastestTeam}</span>
+                    <span class="fastest-date">${fastestDate}</span>
+                </div>
+            `;
+        }
+    });
+    fastestHtml += '</div>';
+    document.getElementById('fastest-level-container').innerHTML = fastestHtml;
 }
 viewRulesBtn.addEventListener('click', openRules);
 closeModalBtn.addEventListener('click', closeModal);
@@ -686,7 +850,7 @@ teamForm.addEventListener('submit', async (e) => {
                     return;
                 }
                 newScore += pointsToAdd;
-                const date = new Date().toISOString().split('T')[0];
+                const date = new Date().toISOString(); // Use full timestamp
                 newHistory.push({ points: pointsToAdd, reason: reason, date: date });
             }
 
@@ -703,7 +867,7 @@ teamForm.addEventListener('submit', async (e) => {
             let initialScore = isNaN(pointsToAdd) ? 0 : pointsToAdd;
             let history = [];
             if (initialScore !== 0) {
-                 history.push({ points: initialScore, reason: reason || "Initial Score", date: new Date().toISOString().split('T')[0] });
+                 history.push({ points: initialScore, reason: reason || "Initial Score", date: new Date().toISOString() });
             }
 
             const newTeamData = {
