@@ -2,8 +2,20 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const xlsx = require('xlsx');
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Admin Middleware
+const checkAdmin = (req, res, next) => {
+    const userEmail = req.headers['x-user-email'] || req.query.email;
+    if (!userEmail || userEmail.toLowerCase() !== 'prashanth.c@brillio.com') {
+        return res.status(403).json({ error: "Unauthorized access. Only prashanth.c@brillio.com can perform this action." });
+    }
+    next();
+};
 const PORT = 3000;
 
 // Middleware
@@ -194,6 +206,152 @@ app.delete('/api/teams/:id', (req, res) => {
         }
         res.json({ message: "Deleted", changes: this.changes });
     });
+});
+
+// Import/Export Routes
+
+// Export Teams
+app.get('/api/teams/export', checkAdmin, (req, res) => {
+    db.all("SELECT * FROM teams", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        const worksheet = xlsx.utils.json_to_sheet(rows);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Teams");
+        
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Disposition', 'attachment; filename="teams.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    });
+});
+
+// Import Teams
+app.post('/api/teams/import', checkAdmin, upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    
+    try {
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet);
+        
+        const stmtCheck = db.prepare("SELECT id FROM teams WHERE name = ?");
+        const stmtUpdate = db.prepare("UPDATE teams SET icon = ?, score = ?, history = ? WHERE id = ?");
+        const stmtInsert = db.prepare("INSERT INTO teams (name, icon, score, history) VALUES (?, ?, ?, ?)");
+        
+        const promises = data.map(row => {
+            return new Promise((resolve, reject) => {
+                const name = row.name;
+                const icon = row.icon || 'fa-brain';
+                const score = row.score || 0;
+                let history = row.history || '[]';
+                if (typeof history !== 'string') history = JSON.stringify(history);
+
+                stmtCheck.get(name, (err, existing) => {
+                    if (err) return reject(err);
+                    if (existing) {
+                        stmtUpdate.run(icon, score, history, existing.id, (err) => {
+                            if (err) reject(err); else resolve();
+                        });
+                    } else {
+                        stmtInsert.run(name, icon, score, history, (err) => {
+                            if (err) reject(err); else resolve();
+                        });
+                    }
+                });
+            });
+        });
+
+        Promise.all(promises)
+            .then(() => {
+                stmtCheck.finalize();
+                stmtUpdate.finalize();
+                stmtInsert.finalize();
+                res.json({ message: "Teams imported successfully", count: data.length });
+            })
+            .catch(error => {
+                stmtCheck.finalize();
+                stmtUpdate.finalize();
+                stmtInsert.finalize();
+                res.status(500).json({ error: "Database error during import: " + error.message });
+            });
+
+    } catch (error) {
+        res.status(500).json({ error: "Failed to process file: " + error.message });
+    }
+});
+
+// Export Reasons
+app.get('/api/reasons/export', checkAdmin, (req, res) => {
+    db.all("SELECT * FROM reason_mappings", [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        const worksheet = xlsx.utils.json_to_sheet(rows);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, "Reasons");
+        
+        const buffer = xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Disposition', 'attachment; filename="reasons.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    });
+});
+
+// Import Reasons
+app.post('/api/reasons/import', checkAdmin, upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+    
+    try {
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet);
+        
+        const stmtCheck = db.prepare("SELECT id FROM reason_mappings WHERE reason = ?");
+        const stmtUpdate = db.prepare("UPDATE reason_mappings SET description = ?, points = ? WHERE id = ?");
+        const stmtInsert = db.prepare("INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)");
+        
+        const promises = data.map(row => {
+            return new Promise((resolve, reject) => {
+                const reason = row.reason;
+                const description = row.description || '';
+                const points = row.points || 0;
+
+                stmtCheck.get(reason, (err, existing) => {
+                    if (err) return reject(err);
+                    if (existing) {
+                        stmtUpdate.run(description, points, existing.id, (err) => {
+                            if (err) reject(err); else resolve();
+                        });
+                    } else {
+                        stmtInsert.run(reason, description, points, (err) => {
+                            if (err) reject(err); else resolve();
+                        });
+                    }
+                });
+            });
+        });
+
+        Promise.all(promises)
+            .then(() => {
+                stmtCheck.finalize();
+                stmtUpdate.finalize();
+                stmtInsert.finalize();
+                res.json({ message: "Reasons imported successfully", count: data.length });
+            })
+            .catch(error => {
+                stmtCheck.finalize();
+                stmtUpdate.finalize();
+                stmtInsert.finalize();
+                res.status(500).json({ error: "Database error during import: " + error.message });
+            });
+
+    } catch (error) {
+        res.status(500).json({ error: "Failed to process file: " + error.message });
+    }
 });
 
 app.listen(PORT, () => {

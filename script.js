@@ -17,6 +17,8 @@ function initAuth() {
         
         if (currentUser === 'Prashanth.C@brillio.com') {
             document.getElementById('manage-reasons-btn').classList.remove('hidden');
+            const adminActions = document.getElementById('admin-actions');
+            if (adminActions) adminActions.classList.remove('hidden');
         }
     } else {
         document.getElementById('auth-overlay').classList.remove('hidden');
@@ -382,6 +384,74 @@ function renderLeaderboard() {
 }
 
 // Event Listeners
+
+// Export/Import Handlers
+const exportTeamsBtn = document.getElementById('export-teams-btn');
+if(exportTeamsBtn) {
+    exportTeamsBtn.addEventListener('click', () => {
+         window.location.href = `${API_BASE_URL}/api/teams/export?email=${encodeURIComponent(currentUser)}`;
+    });
+}
+
+const importTeamsBtn = document.getElementById('import-teams-btn');
+const importTeamsFile = document.getElementById('import-teams-file');
+if(importTeamsBtn && importTeamsFile) {
+    importTeamsBtn.addEventListener('click', () => importTeamsFile.click());
+    importTeamsFile.addEventListener('change', async (e) => {
+        if(e.target.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', e.target.files[0]);
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/teams/import`, {
+                    method: 'POST',
+                    headers: { 'x-user-email': currentUser },
+                    body: formData
+                });
+                const data = await res.json();
+                alert(data.message || (data.error ? "Error: " + data.error : "Import failed"));
+                if(res.ok) fetchTeams();
+            } catch(err) {
+                alert("Import failed: " + err.message);
+            }
+            e.target.value = ''; // Reset
+        }
+    });
+}
+
+const exportReasonsBtn = document.getElementById('export-reasons-btn');
+if(exportReasonsBtn) {
+    exportReasonsBtn.addEventListener('click', () => {
+         window.location.href = `${API_BASE_URL}/api/reasons/export?email=${encodeURIComponent(currentUser)}`;
+    });
+}
+
+const importReasonsBtn = document.getElementById('import-reasons-btn');
+const importReasonsFile = document.getElementById('import-reasons-file');
+if(importReasonsBtn && importReasonsFile) {
+    importReasonsBtn.addEventListener('click', () => importReasonsFile.click());
+    importReasonsFile.addEventListener('change', async (e) => {
+        if(e.target.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', e.target.files[0]);
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/reasons/import`, {
+                    method: 'POST',
+                    headers: { 'x-user-email': currentUser },
+                    body: formData
+                });
+                const data = await res.json();
+                alert(data.message || (data.error ? "Error: " + data.error : "Import failed"));
+                if(res.ok) fetchReasons();
+            } catch(err) {
+                alert("Import failed: " + err.message);
+            }
+            e.target.value = ''; // Reset
+        }
+    });
+}
+
 addTeamBtn.addEventListener('click', () => {
     // Reset Form for Add
     document.getElementById('team-form').reset();
