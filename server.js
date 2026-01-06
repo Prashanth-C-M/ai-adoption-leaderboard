@@ -37,35 +37,6 @@ function initDb() {
     )`, (err) => {
         if (err) {
             console.error("Error creating table:", err);
-        } else {
-            // Check if empty, populate with initial data
-            db.get("SELECT count(*) as count FROM teams", (err, row) => {
-                if (row.count === 0) {
-                    console.log("Seeding database...");
-                    const today = new Date();
-                    const day = 86400000;
-                    const d = (days) => new Date(today.getTime() - days * day).toISOString().split('T')[0];
-
-                    const initialTeams = [
-                        { name: "Neural Nexus", icon: "fa-brain", score: 9850, history: JSON.stringify([{ points: 500, reason: "Launch MVP", date: d(10) }, { points: 200, reason: "Weekly Streak", date: d(3) }]) },
-                        { name: "Data Dynamos", icon: "fa-database", score: 9420, history: JSON.stringify([{ points: 300, reason: "Mentorship", date: d(2) }]) },
-                        { name: "Cyber Synapse", icon: "fa-network-wired", score: 8900, history: JSON.stringify([{ points: 100, reason: "Weekly Streak", date: d(1) }]) },
-                        { name: "Algorithm Allies", icon: "fa-code-branch", score: 8550, history: JSON.stringify([{ points: 500, reason: "Complete AI Course", date: d(5) }]) },
-                        { name: "Silicon Squad", icon: "fa-microchip", score: 8100, history: "[]" },
-                        { name: "Quantum Quest", icon: "fa-atom", score: 7800, history: "[]" },
-                        { name: "Logic Legends", icon: "fa-puzzle-piece", score: 7450, history: "[]" },
-                        { name: "Binary Brigade", icon: "fa-0", score: 7100, history: "[]" },
-                        { name: "Future Forge", icon: "fa-hammer", score: 6800, history: "[]" },
-                        { name: "Techno Titans", icon: "fa-robot", score: 6500, history: "[]" }
-                    ];
-                    
-                    const stmt = db.prepare("INSERT INTO teams (name, icon, score, history) VALUES (?, ?, ?, ?)");
-                    initialTeams.forEach(team => {
-                        stmt.run(team.name, team.icon, team.score, team.history);
-                    });
-                    stmt.finalize();
-                }
-            });
         }
     });
 
@@ -78,27 +49,6 @@ function initDb() {
     )`, (err) => {
         if (err) {
             console.error("Error creating reason_mappings table:", err);
-        } else {
-            // Populate if empty
-            db.get("SELECT count(*) as count FROM reason_mappings", (err, row) => {
-                if (row.count === 0) {
-                    console.log("Seeding reason mappings...");
-                    const initialReasons = [
-                        { reason: "Launch AI MVP", description: "Successfully deploying an AI Minimum Viable Product to production.", points: 1000 },
-                        { reason: "Complete AI Course", description: "Completing a certified AI training course or workshop.", points: 500 },
-                        { reason: "Share Reusable Component", description: "Creating and sharing a reusable AI code component or library.", points: 200 },
-                        { reason: "Weekly Streak", description: "Maintaining a weekly streak of using AI tools.", points: 100 },
-                        { reason: "AI Bug Fix", description: "Identifying and fixing a bug in an AI system.", points: 50 },
-                        { reason: "Mentorship", description: "Mentoring a colleague on AI concepts.", points: 300 }
-                    ];
-                    
-                    const stmt = db.prepare("INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)");
-                    initialReasons.forEach(r => {
-                        stmt.run(r.reason, r.description, r.points);
-                    });
-                    stmt.finalize();
-                }
-            });
         }
     });
 }
