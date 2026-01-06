@@ -57,10 +57,24 @@ function initDb() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         reason TEXT,
         description TEXT,
-        points INTEGER
+        points INTEGER,
+        cap_type TEXT DEFAULT 'Orange'
     )`, (err) => {
         if (err) {
             console.error("Error creating reason_mappings table:", err);
+        } else {
+            // Check for missing column in existing table
+            db.all("PRAGMA table_info(reason_mappings)", (err, rows) => {
+                if (!err) {
+                    const hasCapType = rows.some(r => r.name === 'cap_type');
+                    if (!hasCapType) {
+                        db.run("ALTER TABLE reason_mappings ADD COLUMN cap_type TEXT DEFAULT 'Orange'", (err) => {
+                            if(err) console.error("Error adding cap_type column:", err);
+                            else console.log("Added cap_type column to reason_mappings");
+                        });
+                    }
+                }
+            });
         }
     });
 }
@@ -114,23 +128,23 @@ app.get('/api/reasons', (req, res) => {
 });
 
 app.post('/api/reasons', (req, res) => {
-    const { reason, description, points } = req.body;
-    const sql = "INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)";
+    const { reason, description, points, cap_type } = req.body;
+    const sql = "INSERT INTO reason_mappings (reason, description, points, cap_type) VALUES (?, ?, ?, ?)";
     
-    db.run(sql, [reason, description, points], function(err) {
+    db.run(sql, [reason, description, points, cap_type || 'Orange'], function(err) {
         if (err) {
             res.status(400).json({ error: err.message });
             return;
         }
-        res.json({ id: this.lastID, reason, description, points });
+        res.json({ id: this.lastID, reason, description, points, cap_type: cap_type || 'Orange' });
     });
 });
 
 app.put('/api/reasons/:id', (req, res) => {
-    const { reason, description, points } = req.body;
-    const sql = "UPDATE reason_mappings SET reason = ?, description = ?, points = ? WHERE id = ?";
+    const { reason, description, points, cap_type } = req.body;
+    const sql = "UPDATE reason_mappings SET reason = ?, description = ?, points = ?, cap_type = ? WHERE id = ?";
     
-    db.run(sql, [reason, description, points, req.params.id], function(err) {
+    db.run(sql, [reason, description, points, cap_type || 'Orange', req.params.id], function(err) {
         if (err) {
             res.status(400).json({ error: err.message });
             return;
@@ -326,23 +340,24 @@ app.post('/api/reasons/import', checkAdmin, upload.single('file'), (req, res) =>
         const data = xlsx.utils.sheet_to_json(sheet);
         
         const stmtCheck = db.prepare("SELECT id FROM reason_mappings WHERE reason = ?");
-        const stmtUpdate = db.prepare("UPDATE reason_mappings SET description = ?, points = ? WHERE id = ?");
-        const stmtInsert = db.prepare("INSERT INTO reason_mappings (reason, description, points) VALUES (?, ?, ?)");
+        const stmtUpdate = db.prepare("UPDATE reason_mappings SET description = ?, points = ?, cap_type = ? WHERE id = ?");
+        const stmtInsert = db.prepare("INSERT INTO reason_mappings (reason, description, points, cap_type) VALUES (?, ?, ?, ?)");
         
         const promises = data.map(row => {
             return new Promise((resolve, reject) => {
                 const reason = row.reason;
                 const description = row.description || '';
                 const points = row.points || 0;
+                const cap_type = row.cap_type || 'Orange';
 
                 stmtCheck.get(reason, (err, existing) => {
                     if (err) return reject(err);
                     if (existing) {
-                        stmtUpdate.run(description, points, existing.id, (err) => {
+                        stmtUpdate.run(description, points, cap_type, existing.id, (err) => {
                             if (err) reject(err); else resolve();
                         });
                     } else {
-                        stmtInsert.run(reason, description, points, (err) => {
+                        stmtInsert.run(reason, description, points, cap_type, (err) => {
                             if (err) reject(err); else resolve();
                         });
                     }

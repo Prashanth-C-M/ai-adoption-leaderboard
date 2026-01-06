@@ -195,13 +195,20 @@ async function fetchReasons() {
         const response = await fetch(`${API_BASE_URL}/api/reasons`);
         if (!response.ok) throw new Error('Failed to fetch reasons');
         reasonMappings = await response.json();
-        populateReasonDropdown();
+        // Don't populate here, wait for team context
     } catch (error) {
         console.error("Error fetching reasons:", error);
     }
 }
 
-function populateReasonDropdown() {
+function getTargetCap(score) {
+    if (score < 3000) return 'Orange';
+    if (score < 6000) return 'Green';
+    if (score < 9000) return 'Purple';
+    return 'Black';
+}
+
+function populateReasonDropdown(team = null) {
     const reasonSelect = document.getElementById('points-reason');
     if (!reasonSelect) return;
 
@@ -210,25 +217,52 @@ function populateReasonDropdown() {
         reasonSelect.remove(1);
     }
 
-    reasonMappings.forEach(mapping => {
-        const option = document.createElement('option');
-        option.value = mapping.reason; // Use reason string as value for compatibility
-        option.textContent = mapping.reason;
-        option.title = mapping.description; // Show description on hover
-        option.dataset.points = mapping.points; // Store points in data attribute
-        reasonSelect.appendChild(option);
+    const currentScore = team ? team.score : 0;
+    const targetCap = getTargetCap(currentScore);
+    const historyReasons = team ? (team.history || []).map(h => h.reason) : [];
+
+    const filteredReasons = reasonMappings.filter(r => {
+        // Cap Type Match
+        const rCap = r.cap_type || 'Orange';
+        if (rCap !== targetCap) return false;
+        
+        // Unique Check
+        if (historyReasons.includes(r.reason)) return false;
+        
+        return true;
     });
 
-    // Add event listener for change
-    reasonSelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        const points = selectedOption.dataset.points;
-        const pointsInput = document.getElementById('points-add');
-        if (pointsInput && points) {
-            pointsInput.value = points;
-        }
+    if (filteredReasons.length === 0) {
+        const option = document.createElement('option');
+        option.textContent = `No available ${targetCap} tasks`;
+        option.disabled = true;
+        reasonSelect.appendChild(option);
+    }
+
+    filteredReasons.forEach(mapping => {
+        const option = document.createElement('option');
+        option.value = mapping.reason; 
+        option.textContent = `${mapping.reason} (+${mapping.points})`;
+        option.title = mapping.description;
+        option.dataset.points = mapping.points;
+        reasonSelect.appendChild(option);
     });
 }
+
+// Initialize change listener once
+document.addEventListener('DOMContentLoaded', () => {
+    const reasonSelect = document.getElementById('points-reason');
+    if (reasonSelect) {
+        reasonSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const points = selectedOption.dataset.points;
+            const pointsInput = document.getElementById('points-add');
+            if (pointsInput && points) {
+                pointsInput.value = points;
+            }
+        });
+    }
+});
 
 // DOM Elements
 const leaderboardList = document.getElementById('leaderboard-list');
@@ -275,10 +309,10 @@ const viewProgressBar = document.getElementById('view-progress-bar');
 
 function calculateLevel(score) {
     if (score >= 12000) return { level: 4, name: "Black Cap", min: 12000, max: 20000 };
-    if (score >= 6000) return { level: 3, name: "Purple Cap", min: 6000, max: 12000 };
-    if (score >= 3000) return { level: 2, name: "Green Cap", min: 3000, max: 6000 };
-    if (score >= 1000) return { level: 1, name: "Orange Cap", min: 1000, max: 3000 };
-    return { level: 0, name: "No Cap", min: 0, max: 1000 };
+    if (score >= 9000) return { level: 3, name: "Purple Cap", min: 9000, max: 12000 };
+    if (score >= 6000) return { level: 2, name: "Green Cap", min: 6000, max: 9000 };
+    if (score >= 3000) return { level: 1, name: "Orange Cap", min: 3000, max: 6000 };
+    return { level: 0, name: "No Cap", min: 0, max: 3000 };
 }
 
 function getCapColor(levelName) {
@@ -359,12 +393,12 @@ function renderLeaderboard() {
 
         const levelData = calculateLevel(team.score);
         let capsHtml = '';
-        if (team.score < 1000) {
+        if (team.score < 3000) {
             capsHtml = '<span style="color:#94a3b8; font-size: 0.9rem; font-style: italic;">No Cap</span>';
         } else {
-            if (team.score >= 1000) capsHtml += getCapSvg("#f97316");
-            if (team.score >= 3000) capsHtml += getCapSvg("#39ff14");
-            if (team.score >= 6000) capsHtml += getCapSvg("#bc13fe");
+            if (team.score >= 3000) capsHtml += getCapSvg("#f97316");
+            if (team.score >= 6000) capsHtml += getCapSvg("#39ff14");
+            if (team.score >= 9000) capsHtml += getCapSvg("#bc13fe");
             if (team.score >= 12000) capsHtml += getCapSvg("#000000");
         }
 
@@ -465,6 +499,8 @@ addTeamBtn.addEventListener('click', () => {
     document.getElementById('modal-title').textContent = "Add New Team";
     document.getElementById('current-score-display').textContent = "0";
     
+    populateReasonDropdown(null); // Load initial reasons (Orange)
+
     // Default Icon
     const defaultIcon = document.querySelector('input[name="team-icon"][value="fa-brain"]');
     if(defaultIcon) defaultIcon.checked = true;
@@ -491,11 +527,18 @@ function renderReasonsList() {
         const div = document.createElement('div');
         div.className = 'rule-item';
         div.style.justifyContent = 'space-between';
+        
+        const capColors = { 'Orange': '#f97316', 'Green': '#39ff14', 'Purple': '#bc13fe', 'Black': '#000000' };
+        const color = capColors[r.cap_type || 'Orange'];
+        const badgeStyle = `background:${color}; color:${r.cap_type==='Black'?'white':'black'}; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold; margin-right:5px; vertical-align: middle;`;
+
         div.innerHTML = `
             <div style="display:flex; align-items:center; gap:1.5rem; flex:1;">
                 <div class="rule-points">+${r.points} pts</div>
                 <div style="flex:1;">
-                    <div style="color:var(--text-primary); font-weight:bold; margin-bottom:0.2rem;">${r.reason}</div>
+                    <div style="color:var(--text-primary); font-weight:bold; margin-bottom:0.2rem;">
+                        <span style="${badgeStyle}">${r.cap_type || 'Orange'}</span> ${r.reason}
+                    </div>
                     <div class="rule-desc" style="font-size:0.9rem;">${r.description}</div>
                 </div>
             </div>
@@ -515,6 +558,8 @@ window.editReason = function(id) {
         document.getElementById('reason-text').value = reason.reason;
         document.getElementById('reason-desc').value = reason.description;
         document.getElementById('reason-points').value = reason.points;
+        const capSelect = document.getElementById('reason-cap');
+        if(capSelect) capSelect.value = reason.cap_type || 'Orange';
     }
 };
 
@@ -534,20 +579,29 @@ async function handleReasonSubmit(e) {
     e.preventDefault();
     console.log("Submitting reason form...");
     const id = parseInt(document.getElementById('reason-id').value);
-    const reason = document.getElementById('reason-text').value;
+    const reason = document.getElementById('reason-text').value.trim();
+    
+    // Duplicate Check
+    const exists = reasonMappings.some(r => r.reason.toLowerCase() === reason.toLowerCase() && r.id !== id);
+    if (exists) {
+        alert("A reason with this name already exists.");
+        return;
+    }
+
     const description = document.getElementById('reason-desc').value;
     const points = parseInt(document.getElementById('reason-points').value);
+    const cap_type = document.getElementById('reason-cap').value;
 
     const method = id > -1 ? 'PUT' : 'POST';
     const url = id > -1 ? `${API_BASE_URL}/api/reasons/${id}` : `${API_BASE_URL}/api/reasons`;
 
-    console.log(`Method: ${method}, URL: ${url}, Data:`, { reason, description, points });
+    console.log(`Method: ${method}, URL: ${url}, Data:`, { reason, description, points, cap_type });
 
     try {
         const res = await fetch(url, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason, description, points })
+            body: JSON.stringify({ reason, description, points, cap_type })
         });
 
         if (!res.ok) {
@@ -974,6 +1028,8 @@ window.editTeam = function(index) {
     // Select the correct icon
     const iconRadio = document.querySelector(`input[name="team-icon"][value="${team.icon}"]`);
     if (iconRadio) iconRadio.checked = true;
+
+    populateReasonDropdown(team); // Load relevant reasons
 
     editIndexInput.value = index;
     modalTitle.textContent = "Update Points / Edit Team";

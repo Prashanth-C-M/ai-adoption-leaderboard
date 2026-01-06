@@ -308,9 +308,10 @@
                 <div class="rule-item">
                     <div class="rule-points">Cap Levels</div>
                     <div class="rule-desc">
-                        <p><span style="color:#f97316">●</span> <strong>Orange Cap</strong>: 0 - 2,500 pts</p>
-                        <p><span style="color:#39ff14">●</span> <strong>Green Cap</strong>: 2,500 - 6,000 pts</p>
-                        <p><span style="color:#bc13fe">●</span> <strong>Purple Cap</strong>: 6,000 - 12,000 pts</p>
+                        <p><span style="color:#64748b">●</span> <strong>No Cap</strong>: 0 - 2,999 pts</p>
+                        <p><span style="color:#f97316">●</span> <strong>Orange Cap</strong>: 3,000 - 5,999 pts</p>
+                        <p><span style="color:#39ff14">●</span> <strong>Green Cap</strong>: 6,000 - 8,999 pts</p>
+                        <p><span style="color:#bc13fe">●</span> <strong>Purple Cap</strong>: 9,000 - 11,999 pts</p>
                         <p><span style="color:#ffffff">●</span> <strong>Black Cap</strong>: 12,000+ pts</p>
                     </div>
                 </div>
@@ -360,6 +361,15 @@
                     <div class="form-group" style="margin-bottom: 0;">
                         <label>Points</label>
                         <input type="number" id="reason-points" required placeholder="Pts">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Cap Type</label>
+                        <select id="reason-cap" required>
+                            <option value="Orange">Orange</option>
+                            <option value="Green">Green</option>
+                            <option value="Purple">Purple</option>
+                            <option value="Black">Black</option>
+                        </select>
                     </div>
                     <button type="submit" class="btn primary" style="margin-top: 0; height: 50px;">Save</button>
                 </div>
