@@ -127,6 +127,11 @@
                 <input type="file" id="import-reasons-file" hidden accept=".xlsx, .xls">
                 <button id="import-reasons-btn" class="btn secondary" title="Import Reasons"><i class="fa-solid fa-upload"></i> Import</button>
             </div>
+            
+            <div style="display: flex; gap: 0.5rem; align-items: center; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 1rem;">
+                <span style="color: var(--text-secondary); font-size: 0.9rem;">Users:</span>
+                <button id="view-users-btn" class="btn secondary" title="View Users"><i class="fa-solid fa-users"></i> View</button>
+            </div>
         </div>
 
         <div class="leaderboard-container">
@@ -301,22 +306,6 @@
             <h2>🏆 Pointing System</h2>
             <div class="rules-list">
                 <div class="rule-item">
-                    <div class="rule-points">+1,000 pts</div>
-                    <div class="rule-desc">Launching an AI Project to Production</div>
-                </div>
-                <div class="rule-item">
-                    <div class="rule-points">+500 pts</div>
-                    <div class="rule-desc">Completing AI Training Course (per member)</div>
-                </div>
-                <div class="rule-item">
-                    <div class="rule-points">+200 pts</div>
-                    <div class="rule-desc">Shared a reusable AI component</div>
-                </div>
-                <div class="rule-item">
-                    <div class="rule-points">+100 pts</div>
-                    <div class="rule-desc">Weekly AI Tool Usage Streak</div>
-                </div>
-                <div class="rule-item">
                     <div class="rule-points">Cap Levels</div>
                     <div class="rule-desc">
                         <p><span style="color:#f97316">●</span> <strong>Orange Cap</strong>: 0 - 2,500 pts</p>
@@ -325,6 +314,28 @@
                         <p><span style="color:#ffffff">●</span> <strong>Black Cap</strong>: 12,000+ pts</p>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Modal -->
+    <div id="users-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close-users">&times;</span>
+            <h2>Registered Users</h2>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 1px solid var(--border-color); color: var(--text-secondary);">
+                            <th style="padding: 1rem;">ID</th>
+                            <th style="padding: 1rem;">Email</th>
+                            <th style="padding: 1rem;">Password</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-list-body">
+                        <!-- Users injected here -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

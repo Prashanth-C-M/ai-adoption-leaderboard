@@ -160,7 +160,7 @@ if(formForgot) {
             const data = await res.json();
             
             if (data.exists) {
-                alert(`Password reset link sent to ${email} (Simulated).`);
+                alert(`Contact Prashanth.c@brillio.com`);
                 showAuth('login');
             } else {
                 alert("Email not found.");
@@ -249,6 +249,12 @@ const manageReasonsBtn = document.getElementById('manage-reasons-btn');
 const closeReasonsBtn = document.querySelector('.close-reasons');
 const reasonForm = document.getElementById('reason-form');
 const reasonsList = document.getElementById('reasons-list');
+
+// Users Modal Elements
+const usersModal = document.getElementById('users-modal');
+const viewUsersBtn = document.getElementById('view-users-btn');
+const closeUsersBtn = document.querySelector('.close-users');
+const usersListBody = document.getElementById('users-list-body');
 
 // Report Modal Elements
 const reportModal = document.getElementById('report-modal');
@@ -582,7 +588,10 @@ function renderReports() {
     const dateCounts = {};
     teams.forEach(t => {
         (t.history || []).forEach(h => {
-            if(h.date) dateCounts[h.date] = (dateCounts[h.date] || 0) + 1;
+            if(h.date) {
+                const dateOnly = h.date.split('T')[0];
+                dateCounts[dateOnly] = (dateCounts[dateOnly] || 0) + 1;
+            }
         });
     });
     
@@ -731,11 +740,12 @@ function renderReports() {
     allHistory.slice(0, 10).forEach(item => { // Show top 10
         const div = document.createElement('div');
         div.className = 'activity-item';
+        const dateDisplay = item.date ? item.date.split('T')[0] : 'Today';
         div.innerHTML = `
             <div class="activity-icon"><i class="fa-solid ${item.teamIcon}"></i></div>
             <div class="activity-details">
                 <div class="activity-title">${item.teamName}</div>
-                <div class="activity-meta">${item.reason} • ${item.date}</div>
+                <div class="activity-meta">${item.reason} • ${dateDisplay}</div>
             </div>
             <div class="activity-points">+${item.points}</div>
         `;
@@ -747,6 +757,8 @@ closeModalBtn.addEventListener('click', closeModal);
 closeRulesBtn.addEventListener('click', closeRules);
 closeViewBtn.addEventListener('click', closeView);
 closeReportBtn.addEventListener('click', closeReport);
+if(viewUsersBtn) viewUsersBtn.addEventListener('click', openUsersModal);
+if(closeUsersBtn) closeUsersBtn.addEventListener('click', closeUsersModal);
 
 function openRules() {
     rulesModal.style.display = 'flex';
@@ -772,6 +784,98 @@ function closeView() {
     viewModal.style.display = 'none';
 }
 
+async function openUsersModal() {
+    usersModal.style.display = 'flex';
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/users`, {
+            headers: { 'x-user-email': currentUser }
+        });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const users = await res.json();
+        renderUsersList(users);
+    } catch (e) {
+        console.error(e);
+        usersListBody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:red;">Error loading users</td></tr>';
+    }
+}
+
+function closeUsersModal() {
+    usersModal.style.display = 'none';
+}
+
+function renderUsersList(users) {
+    window.currentUsersList = users;
+    usersListBody.innerHTML = '';
+    users.forEach((u, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05);">${u.id}</td>
+            <td style="padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05);">${u.email}</td>
+            <td id="pass-${index}" style="padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: monospace;">
+                <span class="pass-text">********</span>
+                <button onclick="togglePassword(${index})" title="Reveal Password" style="margin-left:10px; cursor:pointer; background:none; border:none; color:var(--accent);">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+                <button onclick="deleteUser(${index})" title="Delete User" style="margin-left:5px; cursor:pointer; background:none; border:none; color:#ff4d4d;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </td>
+        `;
+        usersListBody.appendChild(tr);
+    });
+}
+
+window.togglePassword = function(index) {
+    const user = window.currentUsersList[index];
+    const admin = window.currentUsersList.find(u => u.email.toLowerCase() === 'prashanth.c@brillio.com');
+    
+    if (!admin) {
+        alert("Admin user verification failed.");
+        return;
+    }
+
+    const td = document.getElementById(`pass-${index}`);
+    const span = td.querySelector('.pass-text');
+    const icon = td.querySelector('i');
+    
+    if (span.textContent === '********') {
+        const input = prompt("Enter Admin Password to view:");
+        if (input === admin.password) {
+            span.textContent = user.password;
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            if (input !== null) alert("Incorrect password");
+        }
+    } else {
+        span.textContent = '********';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};
+
+window.deleteUser = async function(index) {
+    const user = window.currentUsersList[index];
+    if (confirm(`Are you sure you want to delete user ${user.email}? This action cannot be undone.`)) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/users/${user.id}`, {
+                method: 'DELETE',
+                headers: { 'x-user-email': currentUser }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert("User deleted successfully.");
+                openUsersModal(); // Refresh list
+            } else {
+                alert(data.error || "Delete failed");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error deleting user: " + e.message);
+        }
+    }
+};
+
 // Logout
 document.getElementById('logout-btn').addEventListener('click', () => {
     sessionStorage.removeItem('currentUser');
@@ -784,6 +888,7 @@ window.addEventListener('click', (e) => {
     if (e.target === rulesModal) closeRules();
     if (e.target === viewModal) closeView();
     if (e.target === reportModal) closeReport();
+    if (e.target === usersModal) closeUsersModal();
 });
 
 // Form Submission (Add / Edit)
@@ -927,10 +1032,11 @@ window.viewTeam = function(index) {
                 div.className = 'history-item';
                 const sign = item.points >= 0 ? '+' : '';
                 const pClass = item.points >= 0 ? 'positive' : 'negative';
+                const dateDisplay = item.date ? item.date.split('T')[0] : 'Today';
                 div.innerHTML = `
                     <div class="history-points ${pClass}">${sign}${item.points}</div>
                     <div class="history-reason" title="${item.reason}">${item.reason}</div>
-                    <div class="history-date">${item.date || 'Today'}</div>
+                    <div class="history-date">${dateDisplay}</div>
                 `;
                 viewHistory.appendChild(div);
             });
@@ -985,7 +1091,8 @@ window.updateMomentum = function(viewType) {
                  const d = new Date(h.date);
                  // Check if date is within range
                  if (d >= startDate && d <= now) {
-                     pointsPerDate[h.date] = (pointsPerDate[h.date] || 0) + h.points;
+                     const dateOnly = h.date.split('T')[0];
+                     pointsPerDate[dateOnly] = (pointsPerDate[dateOnly] || 0) + h.points;
                  }
              }
         });
